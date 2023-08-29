@@ -24,7 +24,7 @@ def get_args_parser():
     parser.add_argument('--n_points', default=5000, type=int)
     parser.add_argument('--w_chamfer', default=1.0, type=float)
     parser.add_argument('--w_smooth', default=0.1, type=float)
-    parser.add_argument('--device', default='cuda', type=str) 
+    parser.add_argument('--device', default='cuda:3', type=str) 
     return parser
 
 def fit_mesh(mesh_src, mesh_tgt, args):
@@ -158,4 +158,5 @@ def train_model(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('Model Fit', parents=[get_args_parser()])
     args = parser.parse_args()
+    torch.cuda.set_device(args.device)
     train_model(args)
