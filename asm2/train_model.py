@@ -7,6 +7,7 @@ from  pytorch3d.datasets.r2n2.utils import collate_batched_R2N2
 import dataset_location
 from pytorch3d.ops import sample_points_from_meshes
 import losses
+from tqdm import tqdm,trange
 
 
 def get_args_parser():
@@ -14,7 +15,7 @@ def get_args_parser():
     # Model parameters
     parser.add_argument('--arch', default='resnet18', type=str)
     parser.add_argument('--lr', default=4e-4, type=str)
-    parser.add_argument('--max_iter', default=10000, type=str)
+    parser.add_argument('--max_iter', default=1000, type=str)
     parser.add_argument('--log_freq', default=1000, type=str)
     parser.add_argument('--batch_size', default=2, type=str)
     parser.add_argument('--num_workers', default=0, type=str)
@@ -22,8 +23,8 @@ def get_args_parser():
     parser.add_argument('--n_points', default=5000, type=int)
     parser.add_argument('--w_chamfer', default=1.0, type=float)
     parser.add_argument('--w_smooth', default=0.1, type=float)
-    parser.add_argument('--save_freq', default=10000, type=int)    
-    parser.add_argument('--device', default='cuda', type=str) 
+    parser.add_argument('--save_freq', default=200, type=int)    
+    parser.add_argument('--device', default='cuda:3', type=str) 
     parser.add_argument('--load_feat', action='store_true') 
     parser.add_argument('--load_checkpoint', action='store_true')            
     return parser
@@ -93,7 +94,7 @@ def train_model(args):
         print(f"Succesfully loaded iter {start_iter}")
     
     print("Starting training !")
-    for step in range(start_iter, args.max_iter):
+    for step in trange(start_iter, args.max_iter):
         iter_start_time = time.time()
 
         if step % len(train_loader) == 0: #restart after one epoch
@@ -124,7 +125,7 @@ def train_model(args):
                 'step': step,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict()
-                }, f'checkpoint_{args.type}.pth')
+                }, f'weights/checkpoint_{args.type}.pth')
 
         print("[%4d/%4d]; ttime: %.0f (%.2f, %.2f); loss: %.3f" % (step, args.max_iter, total_time, read_time, iter_time, loss_vis))
 
@@ -133,4 +134,7 @@ def train_model(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('Singleto3D', parents=[get_args_parser()])
     args = parser.parse_args()
+
+    device = torch.device(args.device)
+    torch.cuda.set_device(device)
     train_model(args)

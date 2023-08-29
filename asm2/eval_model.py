@@ -10,12 +10,14 @@ from pytorch3d.ops import sample_points_from_meshes
 from pytorch3d.ops import knn_points
 import mcubes
 import utils_vox
+import visualize
 import matplotlib.pyplot as plt 
+from tqdm import tqdm,trange
 
 def get_args_parser():
     parser = argparse.ArgumentParser('Singleto3D', add_help=False)
     parser.add_argument('--arch', default='resnet18', type=str)
-    parser.add_argument('--max_iter', default=10000, type=str)
+    parser.add_argument('--max_iter', default=200, type=str)
     parser.add_argument('--vis_freq', default=1000, type=str)
     parser.add_argument('--batch_size', default=1, type=str)
     parser.add_argument('--num_workers', default=0, type=str)
@@ -24,7 +26,7 @@ def get_args_parser():
     parser.add_argument('--w_chamfer', default=1.0, type=float)
     parser.add_argument('--w_smooth', default=0.1, type=float)  
     parser.add_argument('--load_checkpoint', action='store_true')  
-    parser.add_argument('--device', default='cuda', type=str) 
+    parser.add_argument('--device', default='cuda:3', type=str) 
     parser.add_argument('--load_feat', action='store_true') 
     return parser
 
@@ -46,7 +48,7 @@ def save_plot(thresholds, avg_f1_score, args):
     ax.set_xlabel('Threshold')
     ax.set_ylabel('F1-score')
     ax.set_title(f'Evaluation {args.type}')
-    plt.savefig(f'eval_{args.type}', bbox_inches='tight')
+    plt.savefig(f'output/eval_{args.type}', bbox_inches='tight')
 
 
 def compute_sampling_metrics(pred_points, gt_points, thresholds, eps=1e-8):
@@ -83,7 +85,7 @@ def compute_sampling_metrics(pred_points, gt_points, thresholds, eps=1e-8):
     metrics = {k: v.cpu() for k, v in metrics.items()}
     return metrics
 
-def evaluate(predictions, mesh_gt, thresholds, args):
+def evaluate(predictions, mesh_gt, thresholds, args,visualize_flag=False):
     if args.type == "vox":
         voxels_src = predictions
         H,W,D = voxels_src.shape[2:]
@@ -101,6 +103,13 @@ def evaluate(predictions, mesh_gt, thresholds, args):
     gt_points = sample_points_from_meshes(mesh_gt, args.n_points)
     
     metrics = compute_sampling_metrics(pred_points, gt_points, thresholds)
+
+    # visualize
+    if visualize_flag:
+        print(pred_points.shape)
+        visualize.render_360_points(pred_points[0],'output/pred_points.gif')
+        visualize.render_360_points(gt_points[0],'output/gt_points.gif')
+
     return metrics
 
 
@@ -132,13 +141,13 @@ def evaluate_model(args):
     avg_r_score = []
 
     if args.load_checkpoint:
-        checkpoint = torch.load(f'checkpoint_{args.type}.pth')
+        checkpoint = torch.load(f'weights/checkpoint_{args.type}.pth')
         model.load_state_dict(checkpoint['model_state_dict'])
         print(f"Succesfully loaded iter {start_iter}")
     
     print("Starting evaluating !")
-    max_iter = len(eval_loader)
-    for step in range(start_iter, max_iter):
+    max_iter = min(len(eval_loader),args.max_iter)
+    for step in trange(start_iter, max_iter):
         iter_start_time = time.time()
 
         read_start_time = time.time()
@@ -154,7 +163,7 @@ def evaluate_model(args):
         if args.type == "vox":
             predictions = predictions.permute(0,1,4,3,2)
 
-        metrics = evaluate(predictions, mesh_gt, thresholds, args)
+        metrics = evaluate(predictions, mesh_gt, thresholds, args,visualize_flag=(step==max_iter-1))
 
         # TODO:
         # if (step % args.vis_freq) == 0:
