@@ -35,6 +35,7 @@ from dataset import (
     trivial_collate,
 )
 
+from render_functions import render_points
 
 # Model class containing:
 #   1) Implicit volume defining the scene
@@ -98,17 +99,24 @@ def render_images(
 
         # TODO (1.3): Visualize xy grid using vis_grid
         if cam_idx == 0 and file_prefix == '':
+            plt.imsave("output_run/vis_grid.jpg",vis_grid(xy_grid, image_size))
             pass
 
         # TODO (1.3): Visualize rays using vis_rays
         if cam_idx == 0 and file_prefix == '':
+            plt.imsave("output_run/vis_rays.jpg",vis_rays(ray_bundle,image_size))
             pass
         
         # TODO (1.4): Implement point sampling along rays in sampler.py
+        # sampler=sampler_dict['stratified']()
+        # ray_bundle=sampler(ray_bundle)
+        # points=ray_bundle.sample_points
+
         pass
 
         # TODO (1.4): Visualize sample points as point cloud
         if cam_idx == 0 and file_prefix == '':
+            # render_points("output_run/render_points.jpg", points)
             pass
 
         # TODO (1.5): Implement rendering in renderer.py
@@ -375,5 +383,7 @@ def main(cfg: DictConfig):
 
 
 if __name__ == "__main__":
+    device = torch.device("cuda:1")
+    torch.cuda.set_device(device)
     main()
 

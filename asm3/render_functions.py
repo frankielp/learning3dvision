@@ -33,7 +33,7 @@ def get_device():
     Checks if GPU is available and returns device accordingly.
     """
     if torch.cuda.is_available():
-        device = torch.device("cuda:0")
+        device = torch.device("cuda:1")
     else:
         device = torch.device("cpu")
     return device
