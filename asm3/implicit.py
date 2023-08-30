@@ -6,42 +6,38 @@ from ray_utils import RayBundle
 
 # Sphere SDF class
 class SphereSDF(torch.nn.Module):
-    def __init__(
-        self,
-        cfg
-    ):
+    def __init__(self, cfg):
         super().__init__()
 
         self.radius = torch.nn.Parameter(
             torch.tensor(cfg.radius.val).float(), requires_grad=cfg.radius.opt
         )
         self.center = torch.nn.Parameter(
-            torch.tensor(cfg.center.val).float().unsqueeze(0), requires_grad=cfg.center.opt
+            torch.tensor(cfg.center.val).float().unsqueeze(0),
+            requires_grad=cfg.center.opt,
         )
 
     def forward(self, ray_bundle):
         sample_points = ray_bundle.sample_points.view(-1, 3)
 
-        return torch.linalg.norm(
-            sample_points - self.center,
-            dim=-1,
-            keepdim=True
-        ) - self.radius
+        return (
+            torch.linalg.norm(sample_points - self.center, dim=-1, keepdim=True)
+            - self.radius
+        )
 
 
 # Box SDF class
 class BoxSDF(torch.nn.Module):
-    def __init__(
-        self,
-        cfg
-    ):
+    def __init__(self, cfg):
         super().__init__()
 
         self.center = torch.nn.Parameter(
-            torch.tensor(cfg.center.val).float().unsqueeze(0), requires_grad=cfg.center.opt
+            torch.tensor(cfg.center.val).float().unsqueeze(0),
+            requires_grad=cfg.center.opt,
         )
         self.side_lengths = torch.nn.Parameter(
-            torch.tensor(cfg.side_lengths.val).float().unsqueeze(0), requires_grad=cfg.side_lengths.opt
+            torch.tensor(cfg.side_lengths.val).float().unsqueeze(0),
+            requires_grad=cfg.side_lengths.opt,
         )
 
     def forward(self, ray_bundle):
@@ -49,34 +45,29 @@ class BoxSDF(torch.nn.Module):
         diff = torch.abs(sample_points - self.center) - self.side_lengths / 2.0
 
         signed_distance = torch.linalg.norm(
-            torch.maximum(diff, torch.zeros_like(diff)),
-            dim=-1
+            torch.maximum(diff, torch.zeros_like(diff)), dim=-1
         ) + torch.minimum(torch.max(diff, dim=-1)[0], torch.zeros_like(diff[..., 0]))
 
         return signed_distance.unsqueeze(-1)
 
 
 sdf_dict = {
-    'sphere': SphereSDF,
-    'box': BoxSDF,
+    "sphere": SphereSDF,
+    "box": BoxSDF,
 }
 
 
 # Converts SDF into density/feature volume
 class SDFVolume(torch.nn.Module):
-    def __init__(
-        self,
-        cfg
-    ):
+    def __init__(self, cfg):
         super().__init__()
 
-        self.sdf = sdf_dict[cfg.sdf.type](
-            cfg.sdf
-        )
+        self.sdf = sdf_dict[cfg.sdf.type](cfg.sdf)
 
-        self.rainbow = cfg.feature.rainbow if 'rainbow' in cfg.feature else False
+        self.rainbow = cfg.feature.rainbow if "rainbow" in cfg.feature else False
         self.feature = torch.nn.Parameter(
-            torch.ones_like(torch.tensor(cfg.feature.val).float().unsqueeze(0)), requires_grad=cfg.feature.opt
+            torch.ones_like(torch.tensor(cfg.feature.val).float().unsqueeze(0)),
+            requires_grad=cfg.feature.opt,
         )
 
         self.alpha = torch.nn.Parameter(
@@ -88,11 +79,14 @@ class SDFVolume(torch.nn.Module):
 
     def _sdf_to_density(self, signed_distance):
         # Convert signed distance to density with alpha, beta parameters
-        return torch.where(
-            signed_distance > 0,
-            0.5 * torch.exp(-signed_distance / self.beta),
-            1 - 0.5 * torch.exp(signed_distance / self.beta),
-        ) * self.alpha
+        return (
+            torch.where(
+                signed_distance > 0,
+                0.5 * torch.exp(-signed_distance / self.beta),
+                1 - 0.5 * torch.exp(signed_distance / self.beta),
+            )
+            * self.alpha
+        )
 
     def forward(self, ray_bundle):
         sample_points = ray_bundle.sample_points.view(-1, 3)
@@ -112,16 +106,16 @@ class SDFVolume(torch.nn.Module):
         # Outputs
         if self.rainbow:
             base_color = torch.clamp(
-                torch.abs(sample_points - self.sdf.center),
-                0.02,
-                0.98
+                torch.abs(sample_points - self.sdf.center), 0.02, 0.98
             )
         else:
             base_color = 1.0
 
         out = {
-            'density': -torch.log(1.0 - density) / deltas,
-            'feature': base_color * self.feature * density.new_ones(sample_points.shape[0], 1)
+            "density": -torch.log(1.0 - density) / deltas,
+            "feature": base_color
+            * self.feature
+            * density.new_ones(sample_points.shape[0], 1),
         }
 
         return out
@@ -236,6 +230,6 @@ class NeuralRadianceField(torch.nn.Module):
 
 
 volume_dict = {
-    'sdf_volume': SDFVolume,
-    'nerf': NeuralRadianceField,
+    "sdf_volume": SDFVolume,
+    "nerf": NeuralRadianceField,
 }
