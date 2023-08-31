@@ -173,7 +173,9 @@ def train(cfg):
             out = model(ray_bundle)
 
             # TODO (2.2): Calculate loss
-            loss = None
+            mse=torch.nn.MSELoss()
+            rgb_pred=out['feature'].view(rgb_gt.shape)
+            loss = mse(rgb_pred,rgb_gt)
 
             # Backprop
             optimizer.zero_grad()
@@ -304,7 +306,9 @@ def train_nerf(cfg):
             out = model(ray_bundle)
 
             # TODO (3.1): Calculate loss
-            loss = None
+            mse=torch.nn.MSELoss()
+            rgb_pred=out['feature']
+            loss = mse(rgb_pred,rgb_gt)
 
             # Take the training step.
             optimizer.zero_grad()
@@ -364,4 +368,5 @@ def main(cfg: DictConfig):
 if __name__ == "__main__":
     device = get_device()
     torch.cuda.set_device(device)
+    torch.set_default_tensor_type('torch.cuda.FloatTensor')
     main()

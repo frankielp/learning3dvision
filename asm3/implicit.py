@@ -213,6 +213,9 @@ class MLPWithInputSkips(torch.nn.Module):
 
 
 # TODO (3.1): Implement NeRF MLP
+'''
+Original
+
 class NeuralRadianceField(torch.nn.Module):
     def __init__(
         self,
@@ -223,10 +226,86 @@ class NeuralRadianceField(torch.nn.Module):
         self.harmonic_embedding_xyz = HarmonicEmbedding(3, cfg.n_harmonic_functions_xyz)
         self.harmonic_embedding_dir = HarmonicEmbedding(3, cfg.n_harmonic_functions_dir)
 
+        embedding_dim_xyz = self.harmonic_embedding_xyz.output_dim # 39
+        embedding_dim_dir = self.harmonic_embedding_dir.output_dim # 15
+
+        ## Define network
+
+        self.linear_rgb = torch.nn.Linear(256, 3)
+        self.linear_density = torch.nn.Linear(256, 1)
+        self.linear_feature = torch.nn.Linear(256, 256)
+
+        
+
+        self.mlp=MLPWithInputSkips(n_layers=8,input_dim=embedding_dim_xyz,output_dim=256,hidden_dim=256,skip_dim=embedding_dim_xyz,input_skips=[4])
+        self.linear_view = torch.nn.Linear(256+embedding_dim_dir, 256)
+
+        self.relu=torch.nn.ReLU()
+        self.sigmoid=torch.nn.Sigmoid()
+        
+
+        pass
+    def forward(self,ray_bundle):
+        out = {
+            "density" :None,
+            "feature": None
+        }
+        # PE
+
+        emb_views=self.harmonic_embedding_dir(ray_bundle.directions) # 1024,3 -> [1024, 15]
+        emb_points=self.harmonic_embedding_xyz(ray_bundle.sample_points) # 1024,128,3 -> [1024, 128, 39]
+
+        # Main mlp
+        out_mlp=self.mlp(emb_points,emb_points)
+
+        # Density (alpha) linear
+        out["density"]=self.relu(self.linear_density(out_mlp))  
+
+        # Feature linear      
+        out_feature=self.relu(self.linear_feature(out_mlp)) # feature vector shape= [1024, 128, 256]
+
+        # RGB linear
+        repeated_emb_views=emb_views.unsqueeze(1).repeat(1,out_feature.shape[1],1)
+        view_feat=torch.cat([out_feature,repeated_emb_views],-1) # [1024, 128, 271]
+        out["feature"]=self.sigmoid(self.linear_rgb(self.relu(self.linear_view(view_feat)))) #color
+
+        
+
+        return out
+'''
+class NeuralRadianceField(torch.nn.Module):
+    def __init__(
+        self,
+        cfg,
+    ):
+        super().__init__()
+
+        self.harmonic_embedding_xyz = HarmonicEmbedding(
+            3, cfg.n_harmonic_functions_xyz)
+        self.harmonic_embedding_dir = HarmonicEmbedding(
+            3, cfg.n_harmonic_functions_dir)
+
+        self.linear1 = torch.nn.Linear(128, 4)
+        self.relu = torch.nn.ReLU()
+        self.sigmoid = torch.nn.Sigmoid()
+
         embedding_dim_xyz = self.harmonic_embedding_xyz.output_dim
         embedding_dim_dir = self.harmonic_embedding_dir.output_dim
 
-        pass
+        self.mlp = MLPWithInputSkips(
+            cfg.n_layers_xyz, embedding_dim_xyz, 128, embedding_dim_xyz, cfg.n_hidden_neurons_xyz, cfg.append_xyz)
+        print(cfg)
+
+    def forward(self, ray_bundle):
+        out = {"density": None, "feature": None}
+        dir_emb = self.harmonic_embedding_dir(ray_bundle.directions)
+        pos_emb = self.harmonic_embedding_xyz(
+            ray_bundle.sample_points.view(-1, 3))
+        raw_out = self.linear1(self.mlp(pos_emb, pos_emb))
+        out["density"] = self.relu(raw_out[:, 0])
+        out["feature"] = self.sigmoid(raw_out[:, 1:])
+
+        return out
 
 
 volume_dict = {
