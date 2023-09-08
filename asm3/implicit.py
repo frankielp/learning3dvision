@@ -280,31 +280,59 @@ class NeuralRadianceField(torch.nn.Module):
     ):
         super().__init__()
 
-        self.harmonic_embedding_xyz = HarmonicEmbedding(
-            3, cfg.n_harmonic_functions_xyz)
-        self.harmonic_embedding_dir = HarmonicEmbedding(
-            3, cfg.n_harmonic_functions_dir)
-
-        self.linear1 = torch.nn.Linear(128, 4)
-        self.relu = torch.nn.ReLU()
-        self.sigmoid = torch.nn.Sigmoid()
+        self.harmonic_embedding_xyz = HarmonicEmbedding(3, cfg.n_harmonic_functions_xyz)
+        self.harmonic_embedding_dir = HarmonicEmbedding(3, cfg.n_harmonic_functions_dir)
 
         embedding_dim_xyz = self.harmonic_embedding_xyz.output_dim
         embedding_dim_dir = self.harmonic_embedding_dir.output_dim
 
+        n_layers = cfg.n_layers_xyz
+        input_dim = cfg.n_hidden_neurons_xyz
+        hidden_dim = input_dim
+        skip_dim = embedding_dim_xyz
+        append_xyz = cfg.append_xyz
+        hidden_dir_dim = cfg.n_hidden_neurons_dir
+
         self.mlp = MLPWithInputSkips(
-            cfg.n_layers_xyz, embedding_dim_xyz, 128, embedding_dim_xyz, cfg.n_hidden_neurons_xyz, cfg.append_xyz)
-        print(cfg)
+            n_layers,
+            embedding_dim_xyz,
+            input_dim,
+            skip_dim,
+            hidden_dim,
+            input_skips=append_xyz,
+        )
 
-    def forward(self, ray_bundle):
-        out = {"density": None, "feature": None}
-        dir_emb = self.harmonic_embedding_dir(ray_bundle.directions)
-        pos_emb = self.harmonic_embedding_xyz(
-            ray_bundle.sample_points.view(-1, 3))
-        raw_out = self.linear1(self.mlp(pos_emb, pos_emb))
-        out["density"] = self.relu(raw_out[:, 0])
-        out["feature"] = self.sigmoid(raw_out[:, 1:])
+        self.density_layer = torch.nn.Linear(hidden_dim, 1)
+        self.density_layer.bias.data[:] = 0.0
 
+        self.color_layer_1 = torch.nn.Linear(hidden_dim, hidden_dim)
+        self.color_layer_2 = torch.nn.Sequential(
+            LinearWithRepeat(hidden_dim + embedding_dim_dir, hidden_dir_dim),
+            torch.nn.ReLU(True),
+            torch.nn.Linear(hidden_dir_dim, 3),
+            torch.nn.Sigmoid(),
+        )
+        print(self.mlp)
+
+    def get_colors(self, features, rays_directions):
+        rays_directions_normed = rays_directions
+
+        intermedia = self.color_layer_1(features)
+        rays_embedding = self.harmonic_embedding_dir(rays_directions_normed)
+
+        return self.color_layer_2((intermedia, rays_embedding))
+
+    def get_densities(self, features):
+        return torch.relu(self.density_layer(features))
+
+    def forward(self, ray_bundle: RayBundle):
+        embeds_xyz = self.harmonic_embedding_xyz(ray_bundle.sample_points)
+        features = self.mlp(embeds_xyz, embeds_xyz)
+        colors = self.get_colors(features, ray_bundle.directions)
+
+        densities = self.get_densities(features)
+        
+        out = {'density':densities, 'feature':colors}
         return out
 
 
