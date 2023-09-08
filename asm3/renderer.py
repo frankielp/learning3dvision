@@ -25,12 +25,12 @@ class VolumeRenderer(torch.nn.Module):
         T = []
         T.append(T_init)
         for i in range(n_points - 1):
-            T_cur = T[i] * torch.exp(-rays_density[:, i] * deltas[:, i] )
+            T_cur = T[i] * torch.exp(-rays_density[:, i] * deltas[:, i])
             T.append(T_cur)
         T = torch.stack(T, dim=1)
 
         # TODO (1.5): Compute weight used for rendering from transmittance and density
-        weights = T * (1.0 - torch.exp(-rays_density * deltas ))
+        weights = T * (1.0 - torch.exp(-rays_density * deltas))
 
         return weights
 

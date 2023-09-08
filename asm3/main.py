@@ -7,19 +7,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import tqdm
+from data_utils import (create_surround_cameras, dataset_from_config, vis_grid,
+                        vis_rays)
+from dataset import get_nerf_datasets, trivial_collate
+from implicit import volume_dict
 from omegaconf import DictConfig
 from PIL import Image
 from pytorch3d.renderer import PerspectiveCameras, look_at_view_transform
-
-from data_utils import create_surround_cameras, dataset_from_config, vis_grid, vis_rays
-from dataset import get_nerf_datasets, trivial_collate
-from implicit import volume_dict
-from ray_utils import (
-    get_pixels_from_image,
-    get_random_pixels_from_image,
-    get_rays_from_pixels,
-    sample_images_at_xy,
-)
+from ray_utils import (get_pixels_from_image, get_random_pixels_from_image,
+                       get_rays_from_pixels, sample_images_at_xy)
 from render_functions import get_device, get_points_renderer, render_points
 from renderer import renderer_dict
 from sampler import sampler_dict
@@ -173,9 +169,9 @@ def train(cfg):
             out = model(ray_bundle)
 
             # TODO (2.2): Calculate loss
-            mse=torch.nn.MSELoss()
-            rgb_pred=out['feature'].view(rgb_gt.shape)
-            loss = mse(rgb_pred,rgb_gt)
+            mse = torch.nn.MSELoss()
+            rgb_pred = out["feature"].view(rgb_gt.shape)
+            loss = mse(rgb_pred, rgb_gt)
 
             # Backprop
             optimizer.zero_grad()
@@ -306,9 +302,9 @@ def train_nerf(cfg):
             out = model(ray_bundle)
 
             # TODO (3.1): Calculate loss
-            mse=torch.nn.MSELoss()
-            rgb_pred=out['feature']
-            loss = mse(rgb_pred,rgb_gt)
+            mse = torch.nn.MSELoss()
+            rgb_pred = out["feature"]
+            loss = mse(rgb_pred, rgb_gt)
 
             # Take the training step.
             optimizer.zero_grad()
@@ -368,5 +364,5 @@ def main(cfg: DictConfig):
 if __name__ == "__main__":
     device = get_device()
     torch.cuda.set_device(device)
-    torch.set_default_tensor_type('torch.cuda.FloatTensor')
+    torch.set_default_tensor_type("torch.cuda.FloatTensor")
     main()

@@ -10,9 +10,8 @@ import numpy as np
 import pytorch3d
 import torch
 from PIL import Image, ImageDraw
-from tqdm.auto import tqdm
-
 from starter.utils import get_device, get_mesh_renderer, load_cow_mesh
+from tqdm.auto import tqdm
 
 
 def dolly_zoom(

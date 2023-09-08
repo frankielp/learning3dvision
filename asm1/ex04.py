@@ -5,10 +5,9 @@ Usage:
 import argparse
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pytorch3d
 import torch
-import numpy as np
-
 from starter.utils import get_device, get_mesh_renderer
 
 
@@ -24,17 +23,20 @@ def render_cow(
     meshes = pytorch3d.io.load_objs_as_meshes([cow_path]).to(device)
 
     ## TODO: rotate here
-    degree=10
-    rad=degree/180 *np.pi
+    degree = 10
+    rad = degree / 180 * np.pi
     # ## rotate Oz
-    # R_relative=[[np.cos(rad), np.sin(rad), 0], [-np.sin(rad), np.cos(rad), 0], [0, 0, 1]] 
+    # R_relative=[[np.cos(rad), np.sin(rad), 0], [-np.sin(rad), np.cos(rad), 0], [0, 0, 1]]
     # ## rotate Ox
-    # R_relative=[[1, 0, 0], [0, np.cos(rad), np.sin(rad)], [0, -np.sin(rad), np.cos(rad)]] 
+    # R_relative=[[1, 0, 0], [0, np.cos(rad), np.sin(rad)], [0, -np.sin(rad), np.cos(rad)]]
     ## rotate Oy
-    R_relative=[[np.cos(rad),0, -np.sin(rad)],  [0, 1, 0], [np.sin(rad), 0, np.cos(rad)]] 
+    R_relative = [
+        [np.cos(rad), 0, -np.sin(rad)],
+        [0, 1, 0],
+        [np.sin(rad), 0, np.cos(rad)],
+    ]
     ## Translation
-    T_relative=[1, -1, 0]
-
+    T_relative = [1, -1, 0]
 
     R_relative = torch.tensor(R_relative).float()
     T_relative = torch.tensor(T_relative).float()
@@ -42,7 +44,7 @@ def render_cow(
     R = R_relative @ torch.tensor([[1.0, 0, 0], [0, 1, 0], [0, 0, 1]])
     T = R_relative @ torch.tensor([0.0, 0, 3]) + T_relative
     # T = torch.tensor([0.0, 0, 3])
-    print(R,T)
+    print(R, T)
     # since the pytorch3d internal uses Point= point@R+t instead of using Point=R @ point+t,
     # we need to add R.t() to compensate that.
     renderer = get_mesh_renderer(image_size=image_size)
@@ -63,7 +65,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--cow_path", type=str, default="data/cow_with_axis.obj")
     parser.add_argument("--image_size", type=int, default=256)
-    parser.add_argument("--output_path", type=str, default="output/transform_cow_03.jpg")
+    parser.add_argument(
+        "--output_path", type=str, default="output/transform_cow_03.jpg"
+    )
     args = parser.parse_args()
 
     plt.imsave(

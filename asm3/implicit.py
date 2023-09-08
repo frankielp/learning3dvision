@@ -1,6 +1,5 @@
 import torch
 import torch.nn.functional as F
-
 from ray_utils import RayBundle
 
 
@@ -213,7 +212,7 @@ class MLPWithInputSkips(torch.nn.Module):
 
 
 # TODO (3.1): Implement NeRF MLP
-'''
+"""
 Original
 
 class NeuralRadianceField(torch.nn.Module):
@@ -272,7 +271,9 @@ class NeuralRadianceField(torch.nn.Module):
         
 
         return out
-'''
+"""
+
+
 class NeuralRadianceField(torch.nn.Module):
     def __init__(
         self,
@@ -331,8 +332,8 @@ class NeuralRadianceField(torch.nn.Module):
         colors = self.get_colors(features, ray_bundle.directions)
 
         densities = self.get_densities(features)
-        
-        out = {'density':densities, 'feature':colors}
+
+        out = {"density": densities, "feature": colors}
         return out
 
 

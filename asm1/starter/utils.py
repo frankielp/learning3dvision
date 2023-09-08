@@ -1,15 +1,9 @@
 import torch
-from pytorch3d.renderer import (
-    AlphaCompositor,
-    RasterizationSettings,
-    MeshRenderer,
-    MeshRasterizer,
-    PointsRasterizationSettings,
-    PointsRenderer,
-    PointsRasterizer,
-    HardPhongShader,
-)
 from pytorch3d.io import load_obj
+from pytorch3d.renderer import (AlphaCompositor, HardPhongShader,
+                                MeshRasterizer, MeshRenderer,
+                                PointsRasterizationSettings, PointsRasterizer,
+                                PointsRenderer, RasterizationSettings)
 
 
 def get_device():

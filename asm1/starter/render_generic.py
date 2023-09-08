@@ -14,7 +14,6 @@ import mcubes
 import numpy as np
 import pytorch3d
 import torch
-
 from starter.utils import get_device, get_mesh_renderer, get_points_renderer
 
 

@@ -1,10 +1,10 @@
-import torch
-import pytorch3d
-from starter.utils import *
-import matplotlib.pyplot as plt
 import imageio
-from tqdm import tqdm, trange
+import matplotlib.pyplot as plt
 import numpy as np
+import pytorch3d
+import torch
+from starter.utils import *
+from tqdm import tqdm, trange
 
 
 def render_tetrahedron():

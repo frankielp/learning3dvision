@@ -3,6 +3,7 @@ import torch
 from pytorch3d.renderer import PerspectiveCameras, look_at_view_transform
 from render_functions import get_device
 
+
 # Basic data loading
 def dataset_from_config(
     cfg,
@@ -17,7 +18,7 @@ def dataset_from_config(
             eye=(cam_cfg.eye,),
             at=(cam_cfg.scene_center,),
             up=(cam_cfg.up,),
-            device=get_device()
+            device=get_device(),
         )
         focal = torch.tensor([cam_cfg.focal])[None]
         principal_point = torch.tensor(cam_cfg.principal_point)[None]
@@ -62,10 +63,7 @@ def create_surround_cameras(radius, n_poses=20, up=(0.0, 1.0, 0.0), focal_length
             ]
 
         R, T = look_at_view_transform(
-            eye=(eye,),
-            at=([0.0, 0.0, 0.0],),
-            up=(up,),
-            device=get_device()
+            eye=(eye,), at=([0.0, 0.0, 0.0],), up=(up,), device=get_device()
         )
 
         cameras.append(

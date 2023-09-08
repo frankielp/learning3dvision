@@ -11,18 +11,12 @@ import numpy as np
 import pytorch3d
 import torch
 from PIL import Image
-from pytorch3d.renderer import (
-    AlphaCompositor,
-    HardPhongShader,
-    MeshRasterizer,
-    MeshRenderer,
-    OpenGLPerspectiveCameras,
-    PointsRasterizationSettings,
-    PointsRasterizer,
-    PointsRenderer,
-    RasterizationSettings,
-    look_at_view_transform,
-)
+from pytorch3d.renderer import (AlphaCompositor, HardPhongShader,
+                                MeshRasterizer, MeshRenderer,
+                                OpenGLPerspectiveCameras,
+                                PointsRasterizationSettings, PointsRasterizer,
+                                PointsRenderer, RasterizationSettings,
+                                look_at_view_transform)
 
 
 def get_device():

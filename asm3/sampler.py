@@ -3,7 +3,6 @@ from typing import List
 
 import torch
 from pytorch3d.renderer.cameras import CamerasBase
-
 from ray_utils import RayBundle
 
 

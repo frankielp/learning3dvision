@@ -1,20 +1,15 @@
-import torch
-import pytorch3d
-import matplotlib.pyplot as plt
 import imageio
-from tqdm import tqdm, trange
+import matplotlib.pyplot as plt
 import numpy as np
-from pytorch3d.renderer import (
-    AlphaCompositor,
-    RasterizationSettings,
-    MeshRenderer,
-    MeshRasterizer,
-    PointsRasterizationSettings,
-    PointsRenderer,
-    PointsRasterizer,
-    HardPhongShader,
-)
+import pytorch3d
+import torch
 from pytorch3d.io import load_obj
+from pytorch3d.renderer import (AlphaCompositor, HardPhongShader,
+                                MeshRasterizer, MeshRenderer,
+                                PointsRasterizationSettings, PointsRasterizer,
+                                PointsRenderer, RasterizationSettings)
+from tqdm import tqdm, trange
+
 
 def get_device():
     """
@@ -44,7 +39,7 @@ def get_points_renderer(
         PointsRenderer.
     """
     if device is None:
-        device=get_device()
+        device = get_device()
     raster_settings = PointsRasterizationSettings(
         image_size=image_size,
         radius=radius,
@@ -67,7 +62,7 @@ def get_mesh_renderer(image_size=512, lights=None, device=None):
             will automatically use GPU if available, otherwise CPU.
     """
     if device is None:
-        device=get_device()
+        device = get_device()
     raster_settings = RasterizationSettings(
         image_size=image_size,
         blur_radius=0.0,
@@ -79,7 +74,8 @@ def get_mesh_renderer(image_size=512, lights=None, device=None):
     )
     return renderer
 
-def render_360_mesh(input_mesh,output_path="output/mesh.gif"):
+
+def render_360_mesh(input_mesh, output_path="output/mesh.gif"):
     """
     Return 360 gif of the object
     """
@@ -124,9 +120,10 @@ def render_360_mesh(input_mesh,output_path="output/mesh.gif"):
     # The .cpu moves the tensor to GPU (if needed).
     imageio.mimsave(output_path, images, duration=5)
 
-def render_360_points(points,output_path="output/points.gif"):
-    image_size=512
-    device=None
+
+def render_360_points(points, output_path="output/points.gif"):
+    image_size = 512
+    device = None
     if device is None:
         device = get_device()
 
@@ -137,20 +134,20 @@ def render_360_points(points,output_path="output/points.gif"):
         features=[color],
     ).to(device)
 
-    images=[]
+    images = []
     renderer = get_points_renderer(image_size=image_size, device=device)
-    for azim in trange(0,360+1,10):
+    for azim in trange(0, 360 + 1, 10):
         R, T = pytorch3d.renderer.cameras.look_at_view_transform(
-                dist=3, elev=0, azim=azim
-            )
+            dist=3, elev=0, azim=azim
+        )
         camera = pytorch3d.renderer.FoVPerspectiveCameras(
             R=R, T=T, fov=60, device=device
         )
-        
+
         rend = renderer(torus_point_cloud, cameras=camera)
-        rend=rend[0, ..., :3].cpu().detach().numpy()
+        rend = rend[0, ..., :3].cpu().detach().numpy()
         rend = (rend * 255).astype(np.uint8)
 
         images.append(rend)
-       
+
     imageio.mimsave(output_path, images, duration=10)

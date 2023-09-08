@@ -1,21 +1,20 @@
-import torch
-import pytorch3d
-from starter.utils import *
-import matplotlib.pyplot as plt
 import imageio
-from tqdm import tqdm, trange
+import matplotlib.pyplot as plt
 import numpy as np
+import pytorch3d
+import torch
+from starter.utils import *
+from tqdm import tqdm, trange
 
 
 def retexturing(cow_path="data/cow.obj"):
-
     device = None
     if device is None:
         device = get_device()
     # Image param
     image_size = 512
-    color1 = np.array([ 0, 0, 1 ]) #red
-    color2 = np.array([ 1, 0, 0 ]) #blue
+    color1 = np.array([0, 0, 1])  # red
+    color2 = np.array([1, 0, 0])  # blue
 
     # Get renderer
     renderer = get_mesh_renderer(image_size=image_size)
@@ -26,14 +25,14 @@ def retexturing(cow_path="data/cow.obj"):
     faces = faces.unsqueeze(0)  # (N_f, 3) -> (1, N_f, 3)
 
     ## TODO: Assign color here
-    z_min=min(pos[-1] for pos in vertices[0])
-    z_max=max(pos[-1] for pos in vertices[0])
+    z_min = min(pos[-1] for pos in vertices[0])
+    z_max = max(pos[-1] for pos in vertices[0])
     textures = torch.ones_like(vertices)  # (1,N_v, 3) : batch,vertices,color
     for i in range(len(vertices[0])):
-        z=float(vertices[0][i][-1])
+        z = float(vertices[0][i][-1])
         alpha = (z - z_min) / (z_max - z_min)
         color = alpha * color2 + (1 - alpha) * color1
-        textures[0][i]=color
+        textures[0][i] = color
 
     ## Load mesh
     mesh = pytorch3d.structures.Meshes(
@@ -43,10 +42,9 @@ def retexturing(cow_path="data/cow.obj"):
     )
     mesh = mesh.to(device)
 
-
     # Render
     images = []
-    for azim in tqdm(range(0, 360 + 1,10)):
+    for azim in tqdm(range(0, 360 + 1, 10)):
         R, T = pytorch3d.renderer.cameras.look_at_view_transform(
             dist=3, elev=0, azim=azim
         )

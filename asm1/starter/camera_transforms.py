@@ -5,10 +5,9 @@ Usage:
 import argparse
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pytorch3d
 import torch
-import numpy as np
-
 from starter.utils import get_device, get_mesh_renderer
 
 
